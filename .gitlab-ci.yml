@@ -1,0 +1,31 @@
+stages:
+  - notify
+
+event_notifier:
+  stage: notify
+  image: python:3.10
+
+  variables:
+    ATTEMPT_COUNT: "2"
+    JOIN_INPUT_WITH_LIST: "0"
+    BASE_URL: $CI_SERVER_URL
+
+  before_script:
+    - pip install -r requirements.txt
+
+  script:
+    - cd $CI_PROJECT_DIR
+    - python3 -m notifier
+
+  only:
+    - merge_requests
+    - push
+
+  variables:
+    TELEGRAM_BOT_TOKEN: $TELEGRAM_BOT_TOKEN
+    TELEGRAM_CHAT_ID: $TELEGRAM_CHAT_ID
+    TELEGRAM_MESSAGE_THREAD_ID: $TELEGRAM_MESSAGE_THREAD_ID
+    DISCORD_WEBHOOK_URL: $DISCORD_WEBHOOK_URL
+    DISCORD_THREAD_ID: $DISCORD_THREAD_ID
+    GITLAB_TOKEN: $GITLAB_TOKEN
+    EVENT_URL: "$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_IID"
