@@ -4,7 +4,7 @@ from notifier.application import interfaces
 from notifier.domain.entities import Issue, PullRequest
 
 
-class GithubGateway(interfaces.Github):
+class GithubGateway(interfaces.GitProvider):
     def __init__(self, token: str, event_url: str) -> None:
         self._token = token
         self._url = event_url

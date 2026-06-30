@@ -5,16 +5,16 @@ from notifier.application.services import RenderService
 class SendIssue:
     def __init__(
         self,
-        github: interfaces.Github,
+        provider: interfaces.GitProvider,
         notifiers: list[interfaces.Notifier],
         render_service: RenderService,
     ) -> None:
-        self._github = github
+        self._provider = provider
         self._notifiers = notifiers
         self._render_service = render_service
 
     def handler(self) -> None:
-        issue = self._github.get_issue()
+        issue = self._provider.get_issue()
         labels = self._render_service.format_labels(issue.labels)
         body = self._render_service.format_body(issue.body)
 
@@ -25,16 +25,16 @@ class SendIssue:
 class SendPR:
     def __init__(
         self,
-        github: interfaces.Github,
+        provider: interfaces.GitProvider,
         notifiers: list[interfaces.Notifier],
         render_service: RenderService,
     ) -> None:
-        self._github = github
+        self._provider = provider
         self._notifiers = notifiers
         self._render_service = render_service
 
     def handler(self) -> None:
-        pr = self._github.get_pull_request()
+        pr = self._provider.get_pull_request()
         labels = self._render_service.format_labels(pr.labels)
         body = self._render_service.format_body(pr.body)
 

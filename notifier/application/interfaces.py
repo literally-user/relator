@@ -4,7 +4,7 @@ import typing
 from notifier.domain.entities import Issue, PullRequest
 
 
-class Github(typing.Protocol):
+class GitProvider(typing.Protocol):
     @abc.abstractmethod
     def get_issue(self) -> Issue: ...
 

@@ -9,30 +9,45 @@ from notifier.application.services import RenderService
 from notifier.infrastructure.discord_gateway import DiscordGateway
 from notifier.infrastructure.github_gateway import GithubGateway
 from notifier.infrastructure.telegram_gateway import TelegramGateway
+from notifier.infrastructure.gitlab_gateway import GitlabGateway
+
+PROVIDERS = [
+    (
+        (
+            r"https://(?:api\.)?github\.com/repos/[\w\-\.]+/[\w\-\.]+/issues/\d+",
+            r"https://(?:api\.)?github\.com/repos/[\w\-\.]+/[\w\-\.]+/pulls/\d+",
+        ),
+        (SendIssue, SendPR),
+        GithubGateway,
+        "GITHUB_TOKEN",
+    ),
+    (
+        (
+            r"https://gitlab\.com/[\w\-.]+/[\w\-.]+/-/issues/\d+",
+            r"https://gitlab\.com/[\w\-.]+/[\w\-.]+/-/merge_requests/\d+",
+        ),
+        (SendIssue, SendPR),
+        GitlabGateway,
+        "GITLAB_TOKEN",
+    ),
+]
 
 
-def get_interactor(url: str) -> type[SendIssue] | type[SendPR]:
-    issue_pattern = (
-        r"https://(?:api\.)?github\.com/repos/[\w\-\.]+/[\w\-\.]+/issues/\d+"
-    )
+def get_provider_action(
+    url: str,
+) -> tuple[
+    type[SendIssue] | type[SendPR], type[GithubGateway] | type[GitlabGateway], str
+]:
+    for variant in PROVIDERS:
+        for pattern in range(len(variant[0])):
+            if re.match(variant[0][pattern], url):
+                return variant[1][pattern], variant[2], variant[3]
 
-    pr_pattern = r"https://(?:api\.)?github\.com/repos/[\w\-\.]+/[\w\-\.]+/pulls/\d+"
-
-    if re.match(issue_pattern, url):
-        return SendIssue
-    elif re.match(pr_pattern, url):
-        return SendPR
-    else:
-        raise ValueError(f"Unknown event type for URL: {url}")
+    raise ValueError(f"Unknown event type for URL: {url}")
 
 
 if __name__ == "__main__":
     event_url = os.environ["EVENT_URL"]
-
-    github_gateway = GithubGateway(
-        token=(os.environ.get("GITHUB_TOKEN") or "").strip(),
-        event_url=event_url,
-    )
 
     custom_labels = os.environ.get("CUSTOM_LABELS", "").split(",")
     if custom_labels == [""]:
@@ -74,8 +89,11 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    interactor = get_interactor(event_url)(
-        github=github_gateway,
+    interactor, provider, env_variable = get_provider_action(event_url)
+    interactor = interactor(
+        provider=provider(
+            token=os.environ.get(env_variable) or "", event_url=event_url
+        ),
         notifiers=notifiers,
         render_service=render_service,
     )
